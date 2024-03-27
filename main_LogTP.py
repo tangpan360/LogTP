@@ -17,7 +17,7 @@ def arg_parser():
     # parser.add_argument("--source_dataset_name", help="please choose source dataset name from BGL or Thunderbird", default="BGL")
     parser.add_argument("--target_dataset_name", help="please choose target dataset name from BGL or Thunderbird", default="BGL")
     # parser.add_argument("--target_dataset_name", help="please choose target dataset name from BGL or Thunderbird", default="Thunderbird")
-    parser.add_argument("--device", help="hardware device", default="cpu")
+    parser.add_argument("--device", help="hardware device", default="cuda")
     parser.add_argument("--random_seed", help="random seed", default=42)
     parser.add_argument("--download_datasets", help="download datasets or not", default=0)
     parser.add_argument("--output_dir", metavar="DIR", help="output directory", default="/Dataset")
