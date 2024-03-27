@@ -160,7 +160,7 @@ class LogTAD(nn.Module):
     def save_log(self):
         try:
             for key, values in self.log.items():
-                pd.DataFrame(values).to_csv(self.current_dir + self.loss_dir + key + "_log.csv", index=False)
+                pd.DataFrame(values).to_csv(self.loss_dir + '/' + key + "_log.csv", index=False)
             print("Log saved")
         except:
             print("Failed to save logs")
