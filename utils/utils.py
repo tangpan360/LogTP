@@ -5,6 +5,9 @@ import torch
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, Dataset
+import seaborn as sns
+import matplotlib.pyplot as plt
+import pandas as pd
 
 
 def set_seed(seed=42):
@@ -57,10 +60,16 @@ def get_center(emb, label=None):
         return 'Not defined'
 
 
+def seed_worker(worker_id):
+    worker_seed = torch.initial_seed() % 2 ** 32
+    np.random.seed(worker_seed)
+    random.seed(worker_seed)
+
+
 def get_iter(X, y_d, y, batch_size=1024, shuffle=True):
     dataset = LogDataset(X, y_d, y)
     if shuffle:
-        iter = DataLoader(dataset, batch_size, shuffle=True, worker_init_fn=np.random.seed(42))
+        iter = DataLoader(dataset, batch_size, shuffle=True, worker_init_fn=seed_worker)
     else:
         iter = DataLoader(dataset, batch_size)
     return iter
@@ -107,3 +116,15 @@ def dist2label(lst_dist, R):
         else:
             y.append(1)
     return y
+
+
+def plot_train_valid_loss(loss_dir):
+    train_loss = pd.read_csv(loss_dir + "train_log.csv")
+    valid_loss = pd.read_csv(loss_dir + "valid_log.csv")
+    sns.lineplot(x="epoch", y="loss", data=train_loss, label="train loss")
+    sns.lineplot(x="epoch", y="loss", data=valid_loss, label="valid loss")
+    plt.title("epoch vs train loss vs valid loss")
+    plt.legend()
+    plt.savefig(loss_dir + "train_valid_loss.png")
+    plt.show()
+    print("plot done")

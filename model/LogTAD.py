@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import pandas as pd
 
@@ -38,9 +40,24 @@ class LogTAD(nn.Module):
         self.loss_cel = nn.CrossEntropyLoss()
         self.w2v = None
         self.center = None
+        self.early_stopping = False
+        self.epochs_no_improve = 0
+        self.n_epochs_stop = options["n_epochs_stop"]
+        self.log = {
+            "train": {
+                key: [] for key in ["epoch", "loss"]
+            },
+            "valid": {
+                key: [] for key in ["epoch", "loss"]
+            }
+        }
+        self.current_dir = os.getcwd()
+        self.loss_dir = self.current_dir + options["loss_dir"]
+        print("test dir1: ", self.loss_dir)
 
     def _train(self, iterator, center):
 
+        print("test dir2: ", self.loss_dir)
         self.encoder.train()
 
         epoch_loss = 0
@@ -74,10 +91,12 @@ class LogTAD(nn.Module):
             domain_label.cpu()
             output.cpu()
             y_d.cpu()
+            self.log['train']['loss'].append(epoch_loss / len(iterator))
 
         return epoch_loss / len(iterator)
 
     def _evaluate(self, iterator, center, epoch):
+        self.log['valid']['epoch'].append(epoch)
 
         self.encoder.eval()
 
@@ -135,19 +154,30 @@ class LogTAD(nn.Module):
 
         print('\nmse: ', np.mean(np.array(lst_mse)))
         print('cel: ', np.mean(np.array(lst_cel)))
+        self.log['valid']['loss'].append(epoch_loss / len(iterator))
         return epoch_loss / len(iterator), center, lst_dist
 
-    def train_LogTAD(self, train_iter, eval_iter, w2v):
+    def save_log(self):
+        try:
+            for key, values in self.log.items():
+                pd.DataFrame(values).to_csv(self.current_dir + self.loss_dir + key + "_log.csv", index=False)
+            print("Log saved")
+        except:
+            print("Failed to save logs")
 
+    def train_LogTAD(self, train_iter, eval_iter, w2v):
         best_eval_loss = float('inf')
 
         for epoch in tqdm(range(self.max_epoch)):
+            if self.early_stopping:
+                break
 
             if epoch == 0:
                 center = torch.Tensor([0.0 for _ in range(self.hid_dim)])
             if epoch > 9:
                 center = fixed_center
             start_time = time.time()
+            self.log['train']['epoch'].append(epoch)
             train_loss = self._train(train_iter, center)
 
             eval_loss, center, _ = self._evaluate(eval_iter, center, epoch)
@@ -162,23 +192,36 @@ class LogTAD(nn.Module):
             if eval_loss < best_eval_loss and epoch >= 9:
                 best_eval_loss = eval_loss
                 # 此处注意存储模型权重的相对位置，是“当前目录”下的saved_model，这个“当前目录”是指调用该文件的主文件
-                torch.save(self.encoder.state_dict(), f'./saved_model/{self.source_dataset_name}-{self.target_dataset_name}.pt')
+                torch.save(self.encoder.state_dict(),
+                           f'./saved_model/{self.source_dataset_name}-{self.target_dataset_name}.pt')
 
                 self.center = fixed_center.cpu()
-                pd.DataFrame(fixed_center.cpu().numpy()).to_csv(f'./saved_model/{self.source_dataset_name}-{self.target_dataset_name}_center.csv')
+                pd.DataFrame(fixed_center.cpu().numpy()).to_csv(
+                    f'./saved_model/{self.source_dataset_name}-{self.target_dataset_name}_center.csv')
+                self.epochs_no_improve = 0
+
+            if eval_loss >= best_eval_loss and epoch >= 9:
+                self.epochs_no_improve += 1
+
+            if self.epochs_no_improve == self.n_epochs_stop:
+                self.early_stopping = True
+                print("Early stopping")
 
             print(f'Epoch: {epoch + 1:02} | Time: {epoch_mins}m {epoch_secs}s')
             print(f'\tTrain Loss: {train_loss: .10f}')
             print(f'\tVal. Loss: {eval_loss: .10f}')
         self.w2v = w2v
         w2v.save(f'./saved_model/{self.source_dataset_name}-{self.target_dataset_name}_w2v.bin')
+        self.save_log()
 
     def load_model(self):
         self.w2v = Word2Vec.load(f'./saved_model/{self.source_dataset_name}-{self.target_dataset_name}_w2v.bin')
-        self.encoder.load_state_dict(torch.load(f'./saved_model/{self.source_dataset_name}-{self.target_dataset_name}.pt'))
+        self.encoder.load_state_dict(
+            torch.load(f'./saved_model/{self.source_dataset_name}-{self.target_dataset_name}.pt'))
         self.encoder.to(self.device)
         self.center = torch.Tensor(
-            pd.read_csv(f'./saved_model/{self.source_dataset_name}-{self.target_dataset_name}_center.csv', index_col=0).iloc[:, 0]
+            pd.read_csv(f'./saved_model/{self.source_dataset_name}-{self.target_dataset_name}_center.csv',
+                        index_col=0).iloc[:, 0]
         )
 
     def _test(self, iterator):

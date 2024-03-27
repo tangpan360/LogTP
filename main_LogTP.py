@@ -1,6 +1,6 @@
 import os
 from argparse import ArgumentParser
-from utils.utils import set_seed, get_train_eval_iter
+from utils.utils import set_seed, get_train_eval_iter, plot_train_valid_loss
 from utils import preprocessing, SlidingWindow
 import pandas as pd
 import time
@@ -17,7 +17,7 @@ def arg_parser():
     # parser.add_argument("--source_dataset_name", help="please choose source dataset name from BGL or Thunderbird", default="BGL")
     parser.add_argument("--target_dataset_name", help="please choose target dataset name from BGL or Thunderbird", default="BGL")
     # parser.add_argument("--target_dataset_name", help="please choose target dataset name from BGL or Thunderbird", default="Thunderbird")
-    parser.add_argument("--device", help="hardware device", default="cuda")
+    parser.add_argument("--device", help="hardware device", default="cpu")
     parser.add_argument("--random_seed", help="random seed", default=42)
     parser.add_argument("--download_datasets", help="download datasets or not", default=0)
     parser.add_argument("--output_dir", metavar="DIR", help="output directory", default="/Dataset")
@@ -29,6 +29,9 @@ def arg_parser():
     parser.add_argument("--lr", help="learning size", default=0.001)
     parser.add_argument("--weight_decay", help="weight decay", default=1e-6)
     parser.add_argument("--eps", help="minimum center value", default=0.1)
+    parser.add_argument("--n_epochs_stop", help="n epochs stop if not improve in valid loss", default=10)
+    parser.add_argument("--loss_dir", metavar="DIR", help="loss directory", default="/loss_dir")
+    parser.add_argument("--saved_model", metavar="DIR", help="saved model dir", default="/saved_model")
 
     # word2vec parameters
     parser.add_argument("--emb_dim", help="word2vec vector size", default=300)
@@ -64,6 +67,16 @@ def main():
     # 设定随机种子 (utils/utils)
     set_seed(options["random_seed"])  # 设定随机种子
     print(f"Set seed: {options['random_seed']}")
+
+    current_path = os.getcwd()
+    loss_dir = current_path + options["loss_dir"]
+    if not os.path.exists(loss_dir):
+        print('Making directory for loss storage')
+        os.makedirs(loss_dir)
+    saved_model = current_path + options["saved_model"]
+    if not os.path.exists(saved_model):
+        print('Making directory for model storage')
+        os.makedirs(saved_model)
 
     # 下载并利用Drain解析数据集 (preprocessing/parsing)
     path = "./Dataset"
@@ -119,6 +132,8 @@ def main():
     demo_logtad.testing(test_normal_s, test_abnormal_s, R_src, target=0)
     print(f'Starting to test target dataset: {options["target_dataset_name"]}')
     demo_logtad.testing(test_normal_t, test_abnormal_t, R_trg, target=1)
+
+    plot_train_valid_loss(loss_dir)
 
 
 if __name__ == '__main__':
