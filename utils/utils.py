@@ -75,13 +75,13 @@ def get_iter(X, y_d, y, batch_size=1024, shuffle=True):
     return iter
 
 
-def get_train_eval_iter(train_normal_s, train_normal_t, window_size=20, emb_size=300):
+def get_train_eval_iter(train_normal_s, train_normal_t, window_size=20, emb_dim=300):
     """
     获取训练集iter和验证集iter
     :param train_normal_s: 源域训练集正常数据
     :param train_normal_t: 目标域训练集正常数据
     :param window_size: 序列划分窗长
-    :param emb_size: 编码维度
+    :param emb_dim: 编码维度
     :return: 返回训练集迭代器train_iter和验证集迭代器eval_iter
     """
     X = list(train_normal_s.Embedding.values)  # 将源域训练集正常数据放到列表中
@@ -91,7 +91,7 @@ def get_train_eval_iter(train_normal_s, train_normal_t, window_size=20, emb_size
         temp = []
         for j in i:
             temp.extend(j)  # 对于每个序列中的20个logkey循环extend (300->600->900->...->6000) 添加到临时列表中
-        X_new.append(np.array(temp).reshape(window_size, emb_size))  # 将每个序列划分并转换为张量。（此时每个元素转换为20*300的张量）
+        X_new.append(np.array(temp).reshape(window_size, emb_dim))  # 将每个序列划分并转换为张量。（此时每个元素转换为20*300的张量）
     y_d = list(train_normal_s.target.values)  # 源域标签
     y_d.extend(list(train_normal_t.target.values))  # 目标域域标签合并到源域域标签
     y = list(train_normal_s.Label.values)  # 源域标签
@@ -121,8 +121,18 @@ def dist2label(lst_dist, R):
 def plot_train_valid_loss(loss_dir):
     train_loss = pd.read_csv(loss_dir + "/train_log.csv")
     valid_loss = pd.read_csv(loss_dir + "/valid_log.csv")
+
+    # 从第五个epoch开始绘制
+    train_loss = train_loss[train_loss['epoch'] >= 5]
+    valid_loss = valid_loss[valid_loss['epoch'] >= 5]
+
     sns.lineplot(x="epoch", y="loss", data=train_loss, label="train loss")
     sns.lineplot(x="epoch", y="loss", data=valid_loss, label="valid loss")
+
+    # 找到验证损失中的最低点
+    min_valid_loss = valid_loss.loc[valid_loss['loss'].idxmin()]
+    plt.scatter(min_valid_loss['epoch'], min_valid_loss['loss'], color='red')  # 用红色原点标记最低点
+
     plt.title("epoch vs train loss vs valid loss")
     plt.legend()
     plt.savefig(loss_dir + "/train_valid_loss.png")

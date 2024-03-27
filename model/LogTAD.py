@@ -91,7 +91,7 @@ class LogTAD(nn.Module):
             domain_label.cpu()
             output.cpu()
             y_d.cpu()
-            self.log['train']['loss'].append(epoch_loss / len(iterator))
+        self.log['train']['loss'].append(epoch_loss / len(iterator))
 
         return epoch_loss / len(iterator)
 

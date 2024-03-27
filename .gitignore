@@ -9,6 +9,10 @@ README.md
 .vscode/
 .idea/
 
+# Folder
+loss_dir/
+saved_model/
+
 # Mac/OSX
 .DS_Store
 
