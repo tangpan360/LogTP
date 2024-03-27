@@ -75,7 +75,7 @@ def get_iter(X, y_d, y, batch_size=1024, shuffle=True):
     return iter
 
 
-def get_train_eval_iter(train_normal_s, train_normal_t, window_size=20, emb_dim=300):
+def get_train_eval_iter(train_normal_s, train_normal_t, window_size=20, emb_dim=300, batch_size=1024):
     """
     获取训练集iter和验证集iter
     :param train_normal_s: 源域训练集正常数据
@@ -103,8 +103,8 @@ def get_train_eval_iter(train_normal_s, train_normal_t, window_size=20, emb_dim=
     y_d_eval = torch.tensor(y_d_eval).reshape(-1, 1).long()
     y_train = torch.tensor(y_train).reshape(-1, 1).long()
     y_eval = torch.tensor(y_eval).reshape(-1, 1).long()
-    train_iter = get_iter(X_train, y_d_train, y_train)
-    eval_iter = get_iter(X_eval, y_d_eval, y_eval)
+    train_iter = get_iter(X_train, y_d_train, y_train, batch_size)
+    eval_iter = get_iter(X_eval, y_d_eval, y_eval, batch_size)
     return train_iter, eval_iter
 
 

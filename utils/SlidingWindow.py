@@ -26,6 +26,7 @@ def word2vec_train(lst, emb_dim=150, seed=42):
         sentences.append([x.lower() for x in tokenizer.tokenize(str(i))])
     # 对切割后的2维列表进行训练，得到训练好的模型w2v
     w2v = Word2Vec(sentences, size=emb_dim, min_count=1, seed=seed, workers=1)
+    print(w2v.wv.vectors)
     return w2v
 
 

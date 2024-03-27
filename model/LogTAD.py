@@ -54,6 +54,7 @@ class LogTAD(nn.Module):
         self.current_dir = os.getcwd()
         self.loss_dir = self.current_dir + options["loss_dir"]
         print("test dir1: ", self.loss_dir)
+        self.batch_size = options["batch_size"]
 
     def _train(self, iterator, center):
 
@@ -275,7 +276,7 @@ class LogTAD(nn.Module):
         X = torch.tensor(X_new, requires_grad=False)
         y_d = torch.tensor(y_d).reshape(-1, 1).long()
         y = torch.tensor(y).reshape(-1, 1).long()
-        iterator = get_iter(X, y_d, y)
+        iterator = get_iter(X, y_d, y, batch_size=self.batch_size)
         R, auc = self.get_best_r(iterator)
         return R, auc
 

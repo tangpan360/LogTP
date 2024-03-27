@@ -113,7 +113,8 @@ def main():
     train_normal_s, test_normal_s, test_abnormal_s, r_s_val_df, train_normal_t, test_normal_t, test_abnormal_t, r_t_val_df, w2v = SlidingWindow.get_datasets(df_source, df_target, options, val_date="2005.11.15")
 
     # 划分train_iter和test_iter
-    train_iter, test_iter = get_train_eval_iter(train_normal_s, train_normal_t)
+    train_iter, test_iter = get_train_eval_iter(train_normal_s, train_normal_t, window_size=options["window_size"],
+                                                emb_dim=options["emb_dim"], batch_size=options["batch_size"])
 
     # 加载模型
     demo_logtad = LogTAD(options)
