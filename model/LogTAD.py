@@ -296,7 +296,7 @@ class LogTAD(nn.Module):
         X_test = torch.tensor(X_new, requires_grad=False)
         y_d_test = torch.tensor(y_d).reshape(-1, 1).long()
         y_test = torch.tensor(y).reshape(-1, 1).long()
-        test_iter = get_iter(X_test, y_d_test, y_test)
+        test_iter = get_iter(X_test, y_d_test, y_test, batch_size=self.batch_size)
         y, lst_dist = self._test(test_iter)
         y_pred = dist2label(lst_dist, r)
         if target:

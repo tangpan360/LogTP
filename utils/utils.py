@@ -85,6 +85,7 @@ def get_train_eval_iter(train_normal_s, train_normal_t, window_size=20, emb_dim=
     :param train_normal_t: 目标域训练集正常数据
     :param window_size: 序列划分窗长
     :param emb_dim: 编码维度
+    :param batch_size: 每批训练数据量
     :return: 返回训练集迭代器train_iter和验证集迭代器eval_iter
     """
     X = list(train_normal_s.Embedding.values)  # 将源域训练集正常数据放到列表中

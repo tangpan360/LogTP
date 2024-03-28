@@ -26,7 +26,6 @@ def word2vec_train(lst, emb_dim=150, seed=42):
         sentences.append([x.lower() for x in tokenizer.tokenize(str(i))])
     # 对切割后的2维列表进行训练，得到训练好的模型w2v
     w2v = Word2Vec(sentences, size=emb_dim, min_count=1, seed=seed, workers=1)
-    print(w2v.wv.vectors)
     return w2v
 
 
@@ -64,7 +63,7 @@ def get_sentence_emb(sentence, w2v):
     return list(sen_emb), drop
 
 
-def word2emb(df_source, df_target, train_size_s, train_size_t, step_size, emb_dim):
+def word2emb(df_source, df_target, train_size_s, train_size_t, step_size, emb_dim, seed):
     """
     将df_source和df_target进行向量编码处理，最后返回的是添加了2列数据（1.编码后的EventTemplate和2.drop标签）的新dataframe
     :param df_source: 源域dataframe
@@ -73,11 +72,13 @@ def word2emb(df_source, df_target, train_size_s, train_size_t, step_size, emb_di
     :param train_size_t: 目标域的训练集size
     :param step_size: 每隔step_size步，进行依次序列切分切分的步长
     :param emb_dim: 编码向量的维度
+    :param seed: 随机种子
     :return: df_source 多了 向量编码列 以及 drop标签 的新的dataframe
     """
     # 利用源域和目标域的数据训练一个word2vec模型，此处只利用了源域和目标域的一部分数据进行训练，所以后边可能会遇到w2v模型中不认识的单词，具体解决方案看后边。
     w2v = word2vec_train(np.concatenate((df_source.EventTemplate.values[:step_size * train_size_s],
-                                         df_target.EventTemplate.values[:step_size * train_size_t])), emb_dim=emb_dim)
+                                         df_target.EventTemplate.values[:step_size * train_size_t])),
+                         emb_dim=emb_dim, seed=seed)
     print('Processing words in the source dataset')
     # 字典dic内容：key为EventTemplate，value为元组(句子向量-300维列表，是否丢弃-0)
     dic = {}
@@ -188,9 +189,10 @@ def get_datasets(df_source, df_target, options, val_date="2005.11.15"):
     train_size_t = options["train_size_t"]
     emb_dim = options["emb_dim"]
     times = int(train_size_s / train_size_t) - 1
+    seed = options["random_seed"]
 
     # 编码成向量添加到 df_source 和 df_target
-    df_source, df_target, w2v = word2emb(df_source, df_target, train_size_s, train_size_t, step_size, emb_dim)
+    df_source, df_target, w2v = word2emb(df_source, df_target, train_size_s, train_size_t, step_size, emb_dim, seed)
 
     print(f'Starting preprocessing for the source: {source} dataset')
     # 将数据集进行切割，输出6列的dataframe，包括Label，Content（序列logkey），Embedding（序列embedding），Date，target（目标域标签），val（验证集标签）。
