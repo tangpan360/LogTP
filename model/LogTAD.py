@@ -53,12 +53,12 @@ class LogTAD(nn.Module):
         }
         self.current_dir = os.getcwd()
         self.loss_dir = self.current_dir + options["loss_dir"]
-        print("test dir1: ", self.loss_dir)
+        # print("test dir1: ", self.loss_dir)
         self.batch_size = options["batch_size"]
 
     def _train(self, iterator, center):
 
-        print("test dir2: ", self.loss_dir)
+        # print("test dir2: ", self.loss_dir)
         # TODO 前向和反向传播处理不走域判别的网路路径
         self.encoder.train()
 
@@ -240,7 +240,8 @@ class LogTAD(nn.Module):
             for (i, batch) in enumerate(iterator):
                 src = batch[0].to(self.device)
                 label = batch[2]
-                output, _ = self.encoder(src, self.alpha)
+                # output, _ = self.encoder(src, self.alpha)
+                output = self.encoder(src, self.alpha)
                 for j in label:
                     y.append(int(j))
                 lst_dist.extend(get_dist(output, self.center))
