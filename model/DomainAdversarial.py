@@ -30,13 +30,14 @@ class DA_LSTM(nn.Module):
         self.rnn = nn.LSTM(emb_dim, hid_dim, n_layers, dropout=dropout, bidirectional=False, batch_first=True,
                            bias=bias)
 
-        self.discriminator = nn.Sequential(
-            nn.Linear(hid_dim, 64),
-            nn.Linear(64, output_dim)
-        )
+        # self.discriminator = nn.Sequential(
+        #     nn.Linear(hid_dim, 64),
+        #     nn.Linear(64, output_dim)
+        # )
 
     def forward(self, input, alpha):
         output, (hidden, cell) = self.rnn(input)
-        y = GRL.apply(torch.mean(output, dim=1), alpha)
-        y = self.discriminator(y)
-        return torch.mean(output, dim=1), y
+        # y = GRL.apply(torch.mean(output, dim=1), alpha)
+        # y = self.discriminator(y)
+        # return torch.mean(output, dim=1), y
+        return torch.mean(output, dim=1)

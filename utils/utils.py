@@ -89,17 +89,21 @@ def get_train_eval_iter(train_normal_s, train_normal_t, window_size=20, emb_dim=
     :return: 返回训练集迭代器train_iter和验证集迭代器eval_iter
     """
     X = list(train_normal_s.Embedding.values)  # 将源域训练集正常数据放到列表中
-    X.extend(list(train_normal_t.Embedding.values))  # 将目标域训练集正常数据合并到源域训练集正常数据列表中。（此时每个元素为20*300的列表）
+    # TODO 不合并目标域和源域的数据
+    # X.extend(list(train_normal_t.Embedding.values))  # 将目标域训练集正常数据合并到源域训练集正常数据列表中。（此时每个元素为20*300的列表）
     X_new = []
     for i in tqdm(X):  # 对于200,000个序列循环转换为np.array数据
         temp = []
         for j in i:
             temp.extend(j)  # 对于每个序列中的20个logkey循环extend (300->600->900->...->6000) 添加到临时列表中
         X_new.append(np.array(temp).reshape(window_size, emb_dim))  # 将每个序列划分并转换为张量。（此时每个元素转换为20*300的张量）
+    # TODO 域标签不需要了
     y_d = list(train_normal_s.target.values)  # 源域标签
-    y_d.extend(list(train_normal_t.target.values))  # 目标域域标签合并到源域域标签
+    # y_d.extend(list(train_normal_t.target.values))  # 目标域域标签合并到源域域标签
     y = list(train_normal_s.Label.values)  # 源域标签
-    y.extend(list(train_normal_t.Label.values))  # 目标域标签合并到源域标签
+    # TODO 不需要对标签进行合并了
+    # y.extend(list(train_normal_t.Label.values))  # 目标域标签合并到源域标签
+    # TODO 此时应该只有 100,000 个源域数据
     X_train, X_eval, y_d_train, y_d_eval, y_train, y_eval = train_test_split(X_new, y_d, y, test_size=0.2, random_state=42)
     X_train = torch.tensor(X_train, requires_grad=False)
     X_eval = torch.tensor(X_eval, requires_grad=False)
