@@ -48,6 +48,6 @@ class DA_LSTM(nn.Module):
         bert_output = self.bert(input_ids=input_ids, attention_mask=attention_mask)
         pooled_output = bert_output.pooler_output
         # y = GRL.apply(torch.mean(output, dim=1), alpha)
-        y = GRL.apply(torch.mean(pooled_output, dim=1), alpha)
+        y = GRL.apply(pooled_output, alpha)
         y = self.discriminator(y)
         return pooled_output, y

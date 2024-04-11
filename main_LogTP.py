@@ -25,7 +25,7 @@ def arg_parser():
 
     # training parameters
     parser.add_argument("--max_epoch", help="epochs", default=100)
-    parser.add_argument("--batch_size", help="batch size", default=1024)
+    parser.add_argument("--batch_size", help="batch size", default=2)
     parser.add_argument("--lr", help="learning size", default=0.001)
     parser.add_argument("--weight_decay", help="weight decay", default=1e-6)
     parser.add_argument("--eps", help="minimum center value", default=0.1)
@@ -43,7 +43,8 @@ def arg_parser():
     parser.add_argument("--train_size_t", help="target training size", default=1000)
 
     # LSTM parameters
-    parser.add_argument("--hid_dim", help="hidden dimensions", default=128)
+    # parser.add_argument("--hid_dim", help="hidden dimensions", default=128)
+    parser.add_argument("--hid_dim", help="hidden dimensions", default=768)
     parser.add_argument("--out_dim", help="output dimensions", default=2)
     parser.add_argument("--n_layers", help="layers of LSTM", default=2)
     parser.add_argument("--dropout", help="dropout", default=0.3)
