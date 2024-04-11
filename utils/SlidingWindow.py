@@ -24,6 +24,8 @@ def word2vec_train(lst, emb_dim=150, seed=42):
     # 本来一个列表，列表中的每个元素为字符串句子，切割后元素为子列表，子列表中的元素由原字符串句子分割后的单词组成。
     for i in lst:
         sentences.append([x.lower() for x in tokenizer.tokenize(str(i))])
+    max_length = max(len(sentence) for sentence in sentences)
+    print("max length: ", max_length)
     # 对切割后的2维列表进行训练，得到训练好的模型w2v
     w2v = Word2Vec(sentences, size=emb_dim, min_count=1, seed=seed, workers=1)
     return w2v
@@ -236,6 +238,7 @@ def get_datasets(df_source, df_target, options, val_date="2005.11.15"):
     temp = train_normal_t[:]
     # 对于目标域前1000个日志序列，经过99次扩充到了100,000个数据，与源域数量保持一致。
     for _ in range(times):
+    # for _ in range(4):
         train_normal_t = pd.concat([train_normal_t, temp])
 
     # Testing normal data

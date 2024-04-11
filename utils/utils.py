@@ -1,5 +1,7 @@
 import os
 import random
+import time
+
 import numpy as np
 import torch
 from tqdm import tqdm
@@ -8,6 +10,8 @@ from torch.utils.data import DataLoader, Dataset
 import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
+from transformers import BertTokenizer
+# from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 def set_seed(seed=42):
@@ -24,9 +28,10 @@ def set_seed(seed=42):
 
 # 定义日志数据集类
 class LogDataset(Dataset):
-    def __init__(self, features, domain_labels, labels):
+    def __init__(self, features, attention_mask, domain_labels, labels):
         super(LogDataset, self).__init__()
         self.features = features  # 特征
+        self.attention_mask = attention_mask  # 掩码
         self.domain_labels = domain_labels  # 域标签
         self.labels = labels  # 标签
 
@@ -37,7 +42,7 @@ class LogDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()  # 将索引转换为列表类型
 
-        return self.features[idx], self.domain_labels[idx], self.labels[idx]
+        return self.features[idx], self.attention_mask[idx], self.domain_labels[idx], self.labels[idx]
 
 
 def epoch_time(start_time, end_time):
@@ -69,8 +74,8 @@ def seed_worker(worker_id):
     random.seed(worker_seed)
 
 
-def get_iter(X, y_d, y, batch_size=1024, shuffle=True):
-    dataset = LogDataset(X, y_d, y)
+def get_iter(X, X_mask, y_d, y, batch_size=1024, shuffle=True):
+    dataset = LogDataset(X, X_mask, y_d, y)
     if shuffle:
         iter = DataLoader(dataset, batch_size, shuffle=True, worker_init_fn=seed_worker)
     else:
@@ -96,19 +101,53 @@ def get_train_eval_iter(train_normal_s, train_normal_t, window_size=20, emb_dim=
         for j in i:
             temp.extend(j)  # 对于每个序列中的20个logkey循环extend (300->600->900->...->6000) 添加到临时列表中
         X_new.append(np.array(temp).reshape(window_size, emb_dim))  # 将每个序列划分并转换为张量。（此时每个元素转换为20*300的张量）
+    # print(train_normal_s.Content.values)
+    tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+    X2 = list(train_normal_s.Content.values)
+    X2.extend(train_normal_t.Content.values)
+    X2_new = []
+    for i in tqdm(X2):
+        # 使用"[SEP]"连接每个字符串，得到每个列表的串联结果
+        temp_string = " [SEP] ".join(i)
+        X2_new.append(temp_string)
+    # TODO 对拼接后的日志进行分词和编码转换成input_ids和attention_mask
+    # 对拼接后的日志字符串进行分词处理
+    start_time = time.time()
+    inputs = tokenizer(X2_new, return_tensors="pt", padding=True, truncation=True, max_length=512)
+    # def tokenize_text(text):
+    #     return tokenizer(text, padding=True, truncation=True, return_tensors="pt", max_length=512)
+
+    # 使用ThreadPoolExecutor来并行处理
+    # with ThreadPoolExecutor(max_workers=10) as executor:
+    #     # 提交所有文本到线程池
+    #     futures = [executor.submit(tokenize_text, text) for text in X2_new]
+    #
+    #     # 收集处理结果
+    #     results = []
+    #     for future in as_completed(futures):
+    #         results.append(future.result())
+
+    end_time = time.time()
+    print("Tokenizer time: ", end_time - start_time)
+    # X_new = results
+    # TODO 并且提取出来 input_ids 和 attention_mask
+    input_ids = torch.tensor(inputs["input_ids"])
+    attention_mask = torch.tensor(inputs["attention_mask"])
     y_d = list(train_normal_s.target.values)  # 源域标签
     y_d.extend(list(train_normal_t.target.values))  # 目标域域标签合并到源域域标签
     y = list(train_normal_s.Label.values)  # 源域标签
     y.extend(list(train_normal_t.Label.values))  # 目标域标签合并到源域标签
-    X_train, X_eval, y_d_train, y_d_eval, y_train, y_eval = train_test_split(X_new, y_d, y, test_size=0.2, random_state=42)
-    X_train = torch.tensor(X_train, requires_grad=False)
-    X_eval = torch.tensor(X_eval, requires_grad=False)
+    # TODO input_ids 和 attention_mask 放到一起进行训练验证集合划分
+    # X_train, X_eval, y_d_train, y_d_eval, y_train, y_eval = train_test_split(X_new, y_d, y, test_size=0.2, random_state=42)
+    X_train, X_eval, X_mask_train, X_mask_eval, y_d_train, y_d_eval, y_train, y_eval = train_test_split(input_ids, attention_mask, y_d, y, test_size=0.2, random_state=42)
+    # X_train = torch.tensor(X_train, requires_grad=False)
+    # X_eval = torch.tensor(X_eval, requires_grad=False)
     y_d_train = torch.tensor(y_d_train).reshape(-1, 1).long()
     y_d_eval = torch.tensor(y_d_eval).reshape(-1, 1).long()
     y_train = torch.tensor(y_train).reshape(-1, 1).long()
     y_eval = torch.tensor(y_eval).reshape(-1, 1).long()
-    train_iter = get_iter(X_train, y_d_train, y_train, batch_size)
-    eval_iter = get_iter(X_eval, y_d_eval, y_eval, batch_size)
+    train_iter = get_iter(X_train, X_mask_train, y_d_train, y_train, batch_size)
+    eval_iter = get_iter(X_eval, X_mask_eval, y_d_eval, y_eval, batch_size)
     return train_iter, eval_iter
 
 

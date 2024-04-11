@@ -12,6 +12,7 @@ import time
 from utils.utils import epoch_time, get_dist, get_center, get_iter, dist2label
 from gensim.models import Word2Vec
 from sklearn import metrics
+from transformers import BertTokenizer
 
 
 class LogTAD(nn.Module):
@@ -65,10 +66,13 @@ class LogTAD(nn.Module):
 
         for (i, batch) in enumerate(iterator):
             src = batch[0].to(self.device)
-            domain_label = batch[1].to(self.device)
-            labels = batch[2]
+            src_mask = batch[1].to(self.device)
+            # domain_label = batch[1].to(self.device)
+            domain_label = batch[2].to(self.device)
+            # labels = batch[2]
+            labels = batch[3]
             self.optimizer.zero_grad()
-            output, y_d = self.encoder(src, self.alpha)
+            output, y_d = self.encoder(src, src_mask, self.alpha)
 
             domain_label = domain_label.view(-1)
             center = center.to(self.device)
@@ -111,9 +115,12 @@ class LogTAD(nn.Module):
         with torch.no_grad():
             for (i, batch) in enumerate(iterator):
                 src = batch[0].to(self.device)
-                domain_label = batch[1].to(self.device)
-                labels = batch[2]
-                output, y_d = self.encoder(src, self.alpha)
+                src_mask = batch[1].to(self.device)
+                # domain_label = batch[1].to(self.device)
+                domain_label = batch[2].to(self.device)
+                # labels = batch[2]
+                labels = batch[3]
+                output, y_d = self.encoder(src, src_mask, self.alpha)
                 if i == 0:
                     lst_emb = output
                 else:
@@ -142,6 +149,7 @@ class LogTAD(nn.Module):
                 lst_dist.extend(get_dist(output, center))
 
                 src.cpu()
+                src_mask.cpu()
                 domain_label.cpu()
                 lst_emb.cpu()
                 output.cpu()
@@ -234,12 +242,15 @@ class LogTAD(nn.Module):
         with torch.no_grad():
             for (i, batch) in enumerate(iterator):
                 src = batch[0].to(self.device)
-                label = batch[2]
-                output, _ = self.encoder(src, self.alpha)
+                src_mask = batch[1].to(self.device)
+                # label = batch[2]
+                label = batch[3]
+                output, _ = self.encoder(src, src_mask, self.alpha)
                 for j in label:
                     y.append(int(j))
                 lst_dist.extend(get_dist(output, self.center))
                 src.cpu()
+                src_mask.cpu()
         return y, lst_dist
 
     def get_best_r(self, iterator, steps=100):
@@ -271,32 +282,67 @@ class LogTAD(nn.Module):
             for j in i:
                 temp.extend(j)
             X_new.append(np.array(temp).reshape(self.window_size, self.emb_dim))
+        X2 = list(val_df.Content.values)
+        X2_new = []
+        for i in tqdm(X2):
+            # 使用"[SEP]"连接每个字符串，得到每个列表的串联结果
+            temp_string = " [SEP] ".join(i)
+            X2_new.append(temp_string)
+        # TODO 对拼接后的日志进行分词和编码转换成input_ids和attention_mask
+        # 对拼接后的日志字符串进行分词处理
+        start_time = time.time()
+        tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+        inputs = tokenizer(X2_new, return_tensors="pt", padding=True, truncation=True, max_length=512)
+        end_time = time.time()
+        print("Tokenizer time2: ", end_time - start_time)
+        # TODO 并且提取出来 input_ids 和 attention_mask
+        input_ids = torch.tensor(inputs["input_ids"])
+        attention_mask = torch.tensor(inputs["attention_mask"])
         y_d = list(val_df.target.values)
         y = list(val_df.Label.values)
         X = torch.tensor(X_new, requires_grad=False)
         y_d = torch.tensor(y_d).reshape(-1, 1).long()
         y = torch.tensor(y).reshape(-1, 1).long()
-        iterator = get_iter(X, y_d, y, batch_size=self.batch_size)
+        # iterator = get_iter(X, y_d, y, batch_size=self.batch_size)
+        iterator = get_iter(input_ids, attention_mask, y_d, y, batch_size=self.batch_size)
         R, auc = self.get_best_r(iterator)
         return R, auc
 
     def testing(self, test_normal_df, test_abnormal_df, r, target=0):
-        X = list(test_normal_df.Embedding.values[::int(1 / self.test_ratio)])
-        X.extend(list(test_abnormal_df.Embedding.values[::int(1 / self.test_ratio)]))
-        X_new = []
-        for i in tqdm(X):
-            temp = []
-            for j in i:
-                temp.extend(j)
-            X_new.append(np.array(temp).reshape(self.window_size, self.emb_dim))
+        # X = list(test_normal_df.Embedding.values[::int(1 / self.test_ratio)])
+        X2 = list(test_normal_df.Content.values[::int(1 / self.test_ratio)])
+        # X.extend(list(test_abnormal_df.Embedding.values[::int(1 / self.test_ratio)]))
+        X2.extend(list(test_abnormal_df.Content.values[::int(1 / self.test_ratio)]))
+        # X_new = []
+        # for i in tqdm(X):
+        #     temp = []
+        #     for j in i:
+        #         temp.extend(j)
+        #     X_new.append(np.array(temp).reshape(self.window_size, self.emb_dim))
+        X2_new = []
+        for i in tqdm(X2):
+            # 使用"[SEP]"连接每个字符串，得到每个列表的串联结果
+            temp_string = " [SEP] ".join(i)
+            X2_new.append(temp_string)
+        # TODO 对拼接后的日志进行分词和编码转换成input_ids和attention_mask
+        # 对拼接后的日志字符串进行分词处理
+        start_time = time.time()
+        tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+        inputs = tokenizer(X2_new, return_tensors="pt", padding=True, truncation=True, max_length=512)
+        end_time = time.time()
+        print("Tokenizer time2: ", end_time - start_time)
+        # TODO 并且提取出来 input_ids 和 attention_mask
+        input_ids = torch.tensor(inputs["input_ids"])
+        attention_mask = torch.tensor(inputs["attention_mask"])
         y_d = list(test_normal_df.target.values[::int(1 / self.test_ratio)])
         y_d.extend(list(test_abnormal_df.target.values[::int(1 / self.test_ratio)]))
         y = list(test_normal_df.Label.values[::int(1 / self.test_ratio)])
         y.extend(list(test_abnormal_df.Label.values[::int(1 / self.test_ratio)]))
-        X_test = torch.tensor(X_new, requires_grad=False)
+        # X_test = torch.tensor(X_new, requires_grad=False)
         y_d_test = torch.tensor(y_d).reshape(-1, 1).long()
         y_test = torch.tensor(y).reshape(-1, 1).long()
-        test_iter = get_iter(X_test, y_d_test, y_test, batch_size=self.batch_size)
+        # test_iter = get_iter(X_test, y_d_test, y_test, batch_size=self.batch_size)
+        test_iter = get_iter(input_ids, attention_mask, y_d_test, y_test, batch_size=self.batch_size)
         y, lst_dist = self._test(test_iter)
         y_pred = dist2label(lst_dist, r)
         if target:
