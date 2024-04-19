@@ -102,7 +102,7 @@ def get_train_eval_iter(train_normal_s, train_normal_t, window_size=20, emb_dim=
             temp.extend(j)  # 对于每个序列中的20个logkey循环extend (300->600->900->...->6000) 添加到临时列表中
         X_new.append(np.array(temp).reshape(window_size, emb_dim))  # 将每个序列划分并转换为张量。（此时每个元素转换为20*300的张量）
     # print(train_normal_s.Content.values)
-    tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+    tokenizer = BertTokenizer.from_pretrained('prajjwal1/bert-tiny')
     X2 = list(train_normal_s.Content.values)
     X2.extend(train_normal_t.Content.values)
     X2_new = []

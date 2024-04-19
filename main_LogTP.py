@@ -25,11 +25,11 @@ def arg_parser():
 
     # training parameters
     parser.add_argument("--max_epoch", help="epochs", default=100)
-    parser.add_argument("--batch_size", help="batch size", default=2)
+    parser.add_argument("--batch_size", help="batch size", default=64)
     parser.add_argument("--lr", help="learning size", default=0.001)
     parser.add_argument("--weight_decay", help="weight decay", default=1e-6)
     parser.add_argument("--eps", help="minimum center value", default=0.1)
-    parser.add_argument("--n_epochs_stop", help="n epochs stop if not improve in valid loss", default=10)
+    parser.add_argument("--n_epochs_stop", help="n epochs stop if not improve in valid loss", default=100)
     parser.add_argument("--loss_dir", metavar="DIR", help="loss directory", default="/loss_dir")
     parser.add_argument("--saved_model", metavar="DIR", help="saved model dir", default="/saved_model")
 
@@ -44,7 +44,10 @@ def arg_parser():
 
     # LSTM parameters
     # parser.add_argument("--hid_dim", help="hidden dimensions", default=128)
-    parser.add_argument("--hid_dim", help="hidden dimensions", default=768)
+    # parser.add_argument("--hid_dim", help="hidden dimensions", default=768)
+    # parser.add_argument("--hid_dim", help="hidden dimensions", default=512)
+    # parser.add_argument("--hid_dim", help="hidden dimensions", default=256)
+    parser.add_argument("--hid_dim", help="hidden dimensions", default=128)
     parser.add_argument("--out_dim", help="output dimensions", default=2)
     parser.add_argument("--n_layers", help="layers of LSTM", default=2)
     parser.add_argument("--dropout", help="dropout", default=0.3)

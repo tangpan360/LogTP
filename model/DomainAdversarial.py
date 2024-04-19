@@ -30,7 +30,7 @@ class DA_LSTM(nn.Module):
         self.dropout = dropout
         # self.rnn = nn.LSTM(emb_dim, hid_dim, n_layers, dropout=dropout, bidirectional=False, batch_first=True,
         #                    bias=bias)
-        self.bert = BertModel.from_pretrained('bert-base-uncased')
+        self.bert = BertModel.from_pretrained('prajjwal1/bert-tiny')
 
         # self.discriminator = nn.Sequential(
         #     nn.Linear(hid_dim, 64),

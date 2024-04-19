@@ -64,7 +64,7 @@ class LogTAD(nn.Module):
 
         epoch_loss = 0
 
-        for (i, batch) in enumerate(iterator):
+        for (i, batch) in tqdm(enumerate(iterator), total=len(iterator)):
             src = batch[0].to(self.device)
             src_mask = batch[1].to(self.device)
             # domain_label = batch[1].to(self.device)
@@ -113,7 +113,7 @@ class LogTAD(nn.Module):
         lst_cel = []
 
         with torch.no_grad():
-            for (i, batch) in enumerate(iterator):
+            for (i, batch) in tqdm(enumerate(iterator), total=len(iterator)):
                 src = batch[0].to(self.device)
                 src_mask = batch[1].to(self.device)
                 # domain_label = batch[1].to(self.device)
@@ -240,7 +240,7 @@ class LogTAD(nn.Module):
         lst_dist = []
 
         with torch.no_grad():
-            for (i, batch) in enumerate(iterator):
+            for (i, batch) in tqdm(enumerate(iterator), total=len(iterator)):
                 src = batch[0].to(self.device)
                 src_mask = batch[1].to(self.device)
                 # label = batch[2]
@@ -291,7 +291,7 @@ class LogTAD(nn.Module):
         # TODO 对拼接后的日志进行分词和编码转换成input_ids和attention_mask
         # 对拼接后的日志字符串进行分词处理
         start_time = time.time()
-        tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+        tokenizer = BertTokenizer.from_pretrained('prajjwal1/bert-tiny')
         inputs = tokenizer(X2_new, return_tensors="pt", padding=True, truncation=True, max_length=512)
         end_time = time.time()
         print("Tokenizer time2: ", end_time - start_time)
@@ -327,7 +327,7 @@ class LogTAD(nn.Module):
         # TODO 对拼接后的日志进行分词和编码转换成input_ids和attention_mask
         # 对拼接后的日志字符串进行分词处理
         start_time = time.time()
-        tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+        tokenizer = BertTokenizer.from_pretrained('prajjwal1/bert-tiny')
         inputs = tokenizer(X2_new, return_tensors="pt", padding=True, truncation=True, max_length=512)
         end_time = time.time()
         print("Tokenizer time2: ", end_time - start_time)
