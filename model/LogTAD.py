@@ -54,12 +54,13 @@ class LogTAD(nn.Module):
         }
         self.current_dir = os.getcwd()
         self.loss_dir = self.current_dir + options["loss_dir"]
-        print("test dir1: ", self.loss_dir)
+        # print("test dir1: ", self.loss_dir)
         self.batch_size = options["batch_size"]
 
     def _train(self, iterator, center):
 
-        print("test dir2: ", self.loss_dir)
+        # print("test dir2: ", self.loss_dir)
+        # TODO 前向和反向传播处理不走域判别的网络路径
         self.encoder.train()
 
         epoch_loss = 0
@@ -68,13 +69,14 @@ class LogTAD(nn.Module):
             src = batch[0].to(self.device)
             src_mask = batch[1].to(self.device)
             # domain_label = batch[1].to(self.device)
-            domain_label = batch[2].to(self.device)
+            # domain_label = batch[2].to(self.device)
             # labels = batch[2]
             labels = batch[3]
             self.optimizer.zero_grad()
-            output, y_d = self.encoder(src, src_mask, self.alpha)
+            # output, y_d = self.encoder(src, src_mask, self.alpha)
+            output = self.encoder(src, src_mask, self.alpha)
 
-            domain_label = domain_label.view(-1)
+            # domain_label = domain_label.view(-1)
             center = center.to(self.device)
 
             mse = 0
@@ -83,8 +85,9 @@ class LogTAD(nn.Module):
                     mse += (10 - self.loss_mse(val, center))
                 else:
                     mse += self.loss_mse(val, center)
-            cel = self.loss_cel(y_d, domain_label.to(dtype=torch.long))
-            loss = mse * 10e4 + cel
+            # cel = self.loss_cel(y_d, domain_label.to(dtype=torch.long))
+            # loss = mse * 10e4 + cel
+            loss = mse
             loss.backward()
 
             self.optimizer.step()
@@ -93,9 +96,9 @@ class LogTAD(nn.Module):
 
             center.cpu()
             src.cpu()
-            domain_label.cpu()
+            # domain_label.cpu()
             output.cpu()
-            y_d.cpu()
+            # y_d.cpu()
         self.log['train']['loss'].append(epoch_loss / len(iterator))
 
         return epoch_loss / len(iterator)
@@ -110,7 +113,7 @@ class LogTAD(nn.Module):
         lst_dist = []
 
         lst_mse = []
-        lst_cel = []
+        # lst_cel = []
 
         with torch.no_grad():
             for (i, batch) in tqdm(enumerate(iterator), total=len(iterator)):
@@ -120,13 +123,14 @@ class LogTAD(nn.Module):
                 domain_label = batch[2].to(self.device)
                 # labels = batch[2]
                 labels = batch[3]
-                output, y_d = self.encoder(src, src_mask, self.alpha)
+                # output, y_d = self.encoder(src, src_mask, self.alpha)
+                output = self.encoder(src, src_mask, self.alpha)
                 if i == 0:
                     lst_emb = output
                 else:
                     lst_emb = torch.cat((lst_emb, output), dim=0)
 
-                domain_label = domain_label.view(-1)
+                # domain_label = domain_label.view(-1)
 
                 center = center.to(self.device)
 
@@ -137,12 +141,13 @@ class LogTAD(nn.Module):
                     else:
                         mse += self.loss_mse(val, center)
 
-                cel = self.loss_cel(y_d, domain_label.to(dtype=torch.long))
+                # cel = self.loss_cel(y_d, domain_label.to(dtype=torch.long))
 
                 lst_mse.append(mse.detach().cpu().numpy())
-                lst_cel.append(cel.detach().cpu().numpy())
+                # lst_cel.append(cel.detach().cpu().numpy())
 
-                loss = mse * 10e4 + cel
+                # loss = mse * 10e4 + cel
+                loss = mse
 
                 epoch_loss += loss.item()
 
@@ -150,10 +155,10 @@ class LogTAD(nn.Module):
 
                 src.cpu()
                 src_mask.cpu()
-                domain_label.cpu()
+                # domain_label.cpu()
                 lst_emb.cpu()
                 output.cpu()
-                y_d.cpu()
+                # y_d.cpu()
         if epoch < 10:
             center = get_center(lst_emb)
             print('get center:', center)
@@ -162,7 +167,7 @@ class LogTAD(nn.Module):
             print('new center', center)
 
         print('\nmse: ', np.mean(np.array(lst_mse)))
-        print('cel: ', np.mean(np.array(lst_cel)))
+        # print('cel: ', np.mean(np.array(lst_cel)))
         self.log['valid']['loss'].append(epoch_loss / len(iterator))
         return epoch_loss / len(iterator), center, lst_dist
 
@@ -245,7 +250,8 @@ class LogTAD(nn.Module):
                 src_mask = batch[1].to(self.device)
                 # label = batch[2]
                 label = batch[3]
-                output, _ = self.encoder(src, src_mask, self.alpha)
+                # output, _ = self.encoder(src, src_mask, self.alpha)
+                output = self.encoder(src, src_mask, self.alpha)
                 for j in label:
                     y.append(int(j))
                 lst_dist.extend(get_dist(output, self.center))

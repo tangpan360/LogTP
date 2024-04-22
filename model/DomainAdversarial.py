@@ -36,11 +36,11 @@ class DA_LSTM(nn.Module):
         #     nn.Linear(hid_dim, 64),
         #     nn.Linear(64, output_dim)
         # )
-        self.discriminator = nn.Sequential(
-            nn.Linear(self.bert.config.hidden_size, 64),
-            nn.ReLU(),
-            nn.Linear(64, output_dim)
-        )
+        # self.discriminator = nn.Sequential(
+        #     nn.Linear(self.bert.config.hidden_size, 64),
+        #     nn.ReLU(),
+        #     nn.Linear(64, output_dim)
+        # )
 
     # def forward(self, input, alpha):
     def forward(self, input_ids, attention_mask, alpha):
@@ -48,6 +48,7 @@ class DA_LSTM(nn.Module):
         bert_output = self.bert(input_ids=input_ids, attention_mask=attention_mask)
         pooled_output = bert_output.pooler_output
         # y = GRL.apply(torch.mean(output, dim=1), alpha)
-        y = GRL.apply(pooled_output, alpha)
-        y = self.discriminator(y)
-        return pooled_output, y
+        # y = GRL.apply(pooled_output, alpha)
+        # y = self.discriminator(y)
+        # return pooled_output, y
+        return pooled_output

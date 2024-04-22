@@ -93,18 +93,19 @@ def get_train_eval_iter(train_normal_s, train_normal_t, window_size=20, emb_dim=
     :param batch_size: 每批训练数据量
     :return: 返回训练集迭代器train_iter和验证集迭代器eval_iter
     """
-    X = list(train_normal_s.Embedding.values)  # 将源域训练集正常数据放到列表中
-    X.extend(list(train_normal_t.Embedding.values))  # 将目标域训练集正常数据合并到源域训练集正常数据列表中。（此时每个元素为20*300的列表）
-    X_new = []
-    for i in tqdm(X):  # 对于200,000个序列循环转换为np.array数据
-        temp = []
-        for j in i:
-            temp.extend(j)  # 对于每个序列中的20个logkey循环extend (300->600->900->...->6000) 添加到临时列表中
-        X_new.append(np.array(temp).reshape(window_size, emb_dim))  # 将每个序列划分并转换为张量。（此时每个元素转换为20*300的张量）
+    # X = list(train_normal_s.Embedding.values)  # 将源域训练集正常数据放到列表中
+    # X.extend(list(train_normal_t.Embedding.values))  # 将目标域训练集正常数据合并到源域训练集正常数据列表中。（此时每个元素为20*300的列表）
+    # X_new = []
+    # for i in tqdm(X):  # 对于200,000个序列循环转换为np.array数据
+    #     temp = []
+    #     for j in i:
+    #         temp.extend(j)  # 对于每个序列中的20个logkey循环extend (300->600->900->...->6000) 添加到临时列表中
+    #     X_new.append(np.array(temp).reshape(window_size, emb_dim))  # 将每个序列划分并转换为张量。（此时每个元素转换为20*300的张量）
     # print(train_normal_s.Content.values)
     tokenizer = BertTokenizer.from_pretrained('prajjwal1/bert-tiny')
     X2 = list(train_normal_s.Content.values)
-    X2.extend(train_normal_t.Content.values)
+    # TODO 不合并目标域和源域数据
+    # X2.extend(train_normal_t.Content.values)
     X2_new = []
     for i in tqdm(X2):
         # 使用"[SEP]"连接每个字符串，得到每个列表的串联结果
@@ -134,9 +135,10 @@ def get_train_eval_iter(train_normal_s, train_normal_t, window_size=20, emb_dim=
     input_ids = torch.tensor(inputs["input_ids"])
     attention_mask = torch.tensor(inputs["attention_mask"])
     y_d = list(train_normal_s.target.values)  # 源域标签
-    y_d.extend(list(train_normal_t.target.values))  # 目标域域标签合并到源域域标签
+    # y_d.extend(list(train_normal_t.target.values))  # 目标域域标签合并到源域域标签
     y = list(train_normal_s.Label.values)  # 源域标签
-    y.extend(list(train_normal_t.Label.values))  # 目标域标签合并到源域标签
+    # y.extend(list(train_normal_t.Label.values))  # 目标域标签合并到源域标签
+    # TODO 此时应该只有100,000个源域数据
     # TODO input_ids 和 attention_mask 放到一起进行训练验证集合划分
     # X_train, X_eval, y_d_train, y_d_eval, y_train, y_eval = train_test_split(X_new, y_d, y, test_size=0.2, random_state=42)
     X_train, X_eval, X_mask_train, X_mask_eval, y_d_train, y_d_eval, y_train, y_eval = train_test_split(input_ids, attention_mask, y_d, y, test_size=0.2, random_state=42)
